@@ -1,3 +1,4 @@
+name: Update package
 on:
   schedule:
     - cron: "15 4 * * *"
