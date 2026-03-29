@@ -4,6 +4,9 @@ on:
     - cron: "15 4 * * *"
   workflow_dispatch:
 
+env:
+  PARALLEL_BUILD: true
+
 jobs:
   check:
     runs-on: ubuntu-slim
@@ -61,6 +64,17 @@ jobs:
         run: |
           pacman -Sy --noconfirm --needed git tar zstd gnupg github-cli
 
+      - name: Get job count
+        id: jobs
+        run: |
+          if [ "$PARALLEL_BUILD" = "true" ]; then
+            count=$(nproc)
+          else
+            count=1
+          fi
+          echo "count=$count" >> $GITHUB_OUTPUT
+          echo "Using $count parallel jobs for building."
+
       - name: Create user
         run: |
           useradd -m builder
@@ -88,8 +102,11 @@ jobs:
       - name: Make package
         id: package
         working-directory: repo
+        env:
+          MAKEFLAGS: "-j${{ steps.jobs.outputs.count }}"
+          CMAKE_BUILD_PARALLEL_LEVEL: ${{ steps.jobs.outputs.count }}
         run: |
-          sudo -u builder makepkg --syncdeps --noconfirm --needed --cleanbuild
+          sudo --preserve-env -u builder makepkg --syncdeps --noconfirm --needed --cleanbuild
           echo path="$(ls -1 *.pkg.tar.zst | grep -v -- '-debug-' | head -n1)" >> $GITHUB_OUTPUT
 
       - name: Create repository db
