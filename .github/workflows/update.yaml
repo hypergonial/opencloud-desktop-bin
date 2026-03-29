@@ -51,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: archlinux:base-devel
+    permissions:
+      contents: write
     steps:
       - name: Initialize pacman-key
         run: |
@@ -114,10 +116,16 @@ jobs:
         working-directory: repo
         run: |
           repo-add opencloud-desktop-bin.db.tar.zst ${{ steps.package.outputs.path }}
-          echo path=opencloud-desktop-bin.db.tar.zst >> $GITHUB_OUTPUT
+
+          echo path=opencloud-desktop-bin.db >> $GITHUB_OUTPUT
+          echo files_path=opencloud-desktop-bin.files >> $GITHUB_OUTPUT
+          echo path_zst=opencloud-desktop-bin.db.tar.zst >> $GITHUB_OUTPUT
+          echo files_path_zst=opencloud-desktop-bin.files.tar.zst >> $GITHUB_OUTPUT
 
       - name: Delete all assets from existing release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh release view "archlinux" --repo "${{ github.repository }}" > /dev/null 2>&1 || exit 0
           echo "Release exists, deleting existing assets..."
@@ -134,6 +142,9 @@ jobs:
           files: |
             repo/${{ steps.package.outputs.path }}
             repo/${{ steps.repo.outputs.path }}
+            repo/${{ steps.repo.outputs.files_path }}
+            repo/${{ steps.repo.outputs.path_zst }}
+            repo/${{ steps.repo.outputs.files_path_zst }}
           token: ${{ github.token }}
           overwrite_files: true
 
