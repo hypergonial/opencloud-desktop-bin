@@ -129,7 +129,7 @@ jobs:
 
       - name: Install tools
         run: |
-          pacman -Sy --noconfirm --needed git tar zstd gnupg curl github-cli python
+          pacman -Sy --noconfirm --needed git tar zstd gnupg curl github-cli python jq
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -185,7 +185,22 @@ jobs:
           gh release upload "${{ env.REPO_RELEASE_NAME }}" "${{ steps.repo.outputs.files_path_zst }}" --repo "${{ github.repository }}" --clobber
 
           for pkg in $(find packages -name '*.pkg.tar.zst'); do
+            pkg_name=$(basename "$pkg" | sed -E 's/-([0-9]+:)?[^-]+-[0-9]+-[^-]+\.pkg\.tar\.zst$//')
+            existing_assets=$(gh release view "${{ env.REPO_RELEASE_NAME }}" --repo "${{ github.repository }}" --json assets --jq ".assets[] | select(.name | startswith(\"$pkg_name-\")) | .name")
+
+            # Delete assets of the same name but different versions
+            for asset in $existing_assets; do
+              asset_name=$(basename "$asset" | sed -E 's/-([0-9]+:)?[^-]+-[0-9]+-[^-]+\.pkg\.tar\.zst$//')
+              if [ "$asset_name" = "$pkg_name" ]; then
+                echo "Deleting existing asset: $asset"
+                gh release delete-asset "${{ env.REPO_RELEASE_NAME }}" "$asset" --repo "${{ github.repository }}" --yes
+              fi
+            done
+
+            # Upload the new package
             gh release upload "${{ env.REPO_RELEASE_NAME }}" "$pkg" --repo "${{ github.repository }}" --clobber
+
+            echo "Updated package: $pkg"
           done
 
       - name: Update PKGBUILD versions
