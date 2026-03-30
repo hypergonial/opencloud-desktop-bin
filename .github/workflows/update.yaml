@@ -15,6 +15,10 @@ env:
   REPO_FILENAME: "hypergonial"
   REPO_URL: "https://github.com/hypergonial/arch_repo/releases/download/current"
 
+concurrency:
+  group: "update-packages"
+  cancel-in-progress: false
+
 jobs:
   check:
     name: Check for package updates
@@ -35,7 +39,7 @@ jobs:
           FORCE_UPDATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_update == 'true' }}
         run: |
           # Outputs: is_empty, matrix
-          python3 .github/workflows/check_packages.py
+          python3 .github/scripts/check_packages.py
 
   build:
     name: Build ${{ matrix.name }} ${{ matrix.latest_version }}-${{ matrix.desired_pkgrel }}
@@ -125,7 +129,13 @@ jobs:
 
       - name: Install tools
         run: |
-          pacman -Sy --noconfirm --needed git tar zstd gnupg curl github-cli
+          pacman -Sy --noconfirm --needed git tar zstd gnupg curl github-cli python
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: repo
 
       - name: Download artifacts
         uses: actions/download-artifact@v7
@@ -177,3 +187,22 @@ jobs:
           for pkg in $(find packages -name '*.pkg.tar.zst'); do
             gh release upload "${{ env.REPO_RELEASE_NAME }}" "$pkg" --repo "${{ github.repository }}" --clobber
           done
+
+      - name: Update PKGBUILD versions
+        shell: bash
+        working-directory: repo
+        env:
+          PACKAGE_MATRIX: ${{ needs.check.outputs.matrix }}
+        run: |
+          python3 .github/scripts/update_pkgbuilds.py
+
+      - name: Commit and push PKGBUILD changes
+        shell: bash
+        working-directory: repo
+        run: |
+          git config --global --add safe.directory "$PWD"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -am "Bump PKGBUILDs"
+          git push origin ${{ github.event.repository.default_branch }}

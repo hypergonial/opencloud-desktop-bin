@@ -3,8 +3,8 @@
 _pkgname=opencloud-desktop
 pkgname=opencloud-desktop-bin
 # Updated by CI, do not edit manually
-pkgver=0.0.0 
-pkgrel=0
+pkgver=3.0.3
+pkgrel=2
 pkgdesc='opencloud desktop application (binary package)'
 arch=('x86_64')
 url="https://github.com/hypergonial/opencloud-desktop-bin"
