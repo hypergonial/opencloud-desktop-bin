@@ -27,7 +27,7 @@ makedepends=(doxygen
 conflicts=('opencloud-desktop')
 provides=('opencloud-desktop')
 source=("${_pkgname}::git+https://github.com/opencloud-eu/desktop.git#tag=v${pkgver}")
-sha256sums=('SKIP')
+sha256sums=('88cd6ea12aa9f84ccb31d66b573ae81837db3964d8f826ae2400a4ddabf776fb')
 
 build() {
 	cmake \

@@ -3,8 +3,6 @@ import os
 import subprocess
 from dataclasses import dataclass
 
-PACKAGES = ["opencloud-desktop-bin"]
-
 
 @dataclass
 class PackageInfo:
@@ -17,6 +15,8 @@ class PackageInfo:
 
 
 def call_pkgupdate(package: str, command: str) -> str:
+    """Call a function from the PKGUPDATE file and return its output."""
+
     res = subprocess.run(
         ["bash", "-lc", f"source ./PKGUPDATE && {command}"],
         check=True,
@@ -28,6 +28,8 @@ def call_pkgupdate(package: str, command: str) -> str:
 
 
 def get_package_info(package: str) -> PackageInfo:
+    """Extract the package info from the PKGBUILD and PKGUPDATE files."""
+
     latest_version = call_pkgupdate(package, "fetch_latest_version")
     parallel_build = call_pkgupdate(package, "can_parallel_build") == "true"
 
@@ -51,6 +53,26 @@ def get_package_info(package: str) -> PackageInfo:
     )
 
 
+def find_packages(path: str = ".") -> list[str]:
+    """Find all subdirectories containing a PKGBUILD/PKGUPDATE file."""
+
+    packages: list[str] = []
+
+    for entry in os.listdir(path):
+        if entry.startswith("."):
+            continue
+
+        if not os.path.isdir(entry):
+            continue
+
+        if os.path.isfile(os.path.join(entry, "PKGBUILD")) and os.path.isfile(
+            os.path.join(entry, "PKGUPDATE")
+        ):
+            packages.append(entry)
+
+    return packages
+
+
 def main():
     force_update = os.environ.get("FORCE_UPDATE") == "true"
 
@@ -58,7 +80,7 @@ def main():
 
     to_update: list[PackageInfo] = []
 
-    for package in PACKAGES:
+    for package in find_packages():
         pkg = get_package_info(package)
 
         print(f"Package: {pkg.name}")
@@ -91,6 +113,8 @@ def main():
         with open(out, "a") as f:
             print(f"is_empty={str(len(job_matrix['include']) == 0).lower()}", file=f)
             print(f"matrix={json.dumps(job_matrix)}", file=f)
+    else:
+        print(f"Matrix: {json.dumps(job_matrix, indent=2)}")
 
 
 if __name__ == "__main__":

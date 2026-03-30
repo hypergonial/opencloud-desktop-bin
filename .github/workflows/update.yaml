@@ -41,8 +41,8 @@ jobs:
           # Outputs: is_empty, matrix
           python3 .github/scripts/check_packages.py
 
-  build:
-    name: Build ${{ matrix.name }} ${{ matrix.latest_version }}-${{ matrix.desired_pkgrel }}
+  makepkg:
+    name: Make ${{ matrix.name }} ${{ matrix.latest_version }}-${{ matrix.desired_pkgrel }}
     needs: check
     if: needs.check.outputs.needs_run == 'true'
     runs-on: ubuntu-latest
@@ -60,6 +60,11 @@ jobs:
         run: |
           pacman -Sy --noconfirm --needed git tar zstd gnupg curl
 
+      - name: Create builder user
+        run: |
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
       - name: Get job count
         id: jobs
         env:
@@ -73,11 +78,6 @@ jobs:
           echo "count=$count" >> $GITHUB_OUTPUT
           echo "Using $count parallel jobs for building."
 
-      - name: Create builder user
-        run: |
-          useradd -m builder
-          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -85,11 +85,14 @@ jobs:
           path: repo
 
       - name: Update PKGBUILD
-        uses: ./repo/.github/actions/update-pkgbuild
-        with:
-          version: ${{ matrix.latest_version }}
-          pkgrel: ${{ matrix.desired_pkgrel }}
-          file: "repo/${{ matrix.name }}/PKGBUILD"
+        shell: bash
+        working-directory: repo
+        env:
+          PACKAGE_NAME: ${{ matrix.name }}
+          LATEST_VERSION: ${{ matrix.latest_version }}
+          DESIRED_PKGREL: ${{ matrix.desired_pkgrel }}
+        run: |
+          .github/scripts/update_pkgbuild.py
 
       # TODO: Signing the package would be nice
 
@@ -102,19 +105,26 @@ jobs:
         run: |
           chown -R builder:builder .
           sudo --preserve-env -u builder makepkg --syncdeps --noconfirm --needed --cleanbuild
-          echo path="$(ls -1 *.pkg.tar.zst | grep -v -- '-debug-' | head -n1)" >> $GITHUB_OUTPUT
+          echo filename="$(ls -1 *.pkg.tar.zst | grep -v -- '-debug-' | head -n1)" >> $GITHUB_OUTPUT
           chown -R root:root .
 
-      - name: Upload artifact
+      - name: Upload package file
         uses: actions/upload-artifact@v7
         with:
           name: pkg-${{ matrix.name }}
-          path: repo/${{ matrix.name }}/${{ steps.package.outputs.path }}
+          path: repo/${{ matrix.name }}/${{ steps.package.outputs.filename }}
+          retention-days: 1
+
+      - name: Upload PKGBUILD
+        uses: actions/upload-artifact@v7
+        with:
+          name: pkgbuild-${{ matrix.name }}
+          path: repo/${{ matrix.name }}/PKGBUILD
           retention-days: 1
 
   update_repo:
     name: Update repository files
-    needs: [check, build]
+    needs: [check, makepkg]
     if: needs.check.outputs.needs_run == 'true'
     runs-on: ubuntu-latest
     container:
@@ -137,11 +147,17 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           path: repo
 
-      - name: Download artifacts
+      - name: Download package files
         uses: actions/download-artifact@v7
         with:
           pattern: pkg-*
           path: packages
+
+      - name: Download PKGBUILD files
+        uses: actions/download-artifact@v7
+        with:
+          pattern: pkgbuild-*
+          path: pkgbuilds
 
       - name: Download existing repository db
         shell: bash
@@ -203,13 +219,19 @@ jobs:
             echo "Updated package: $pkg"
           done
 
-      - name: Update PKGBUILD versions
+      - name: Update PKGBUILD files
         shell: bash
-        working-directory: repo
-        env:
-          PACKAGE_MATRIX: ${{ needs.check.outputs.matrix }}
         run: |
-          python3 .github/scripts/update_pkgbuilds.py
+          for file in $(find pkgbuilds -name 'PKGBUILD'); do
+            # Parse the pkgname= line from the file
+            pkgname=$(grep '^pkgname=' "$file" | head -n1 | cut -d= -f2 | tr -d "'\"")
+            if [ -n "$pkgname" ]; then
+              echo "Updating PKGBUILD for $pkgname"
+              cp "$file" "repo/$pkgname/PKGBUILD"
+            else
+              echo "Could not find pkgname in $file, skipping"
+            fi
+          done
 
       - name: Commit and push PKGBUILD changes
         shell: bash

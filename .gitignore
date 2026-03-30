@@ -1,43 +1,11 @@
-# Prerequisites
-*.d
+# pacman package files
+*.pkg.tar.zst
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# pacman db/manifest files
+*.db
+*.files
+*.db.tar.zst
+*.files.tar.zst
 
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# debug information files
-*.dwo
-
-test
+# Usable for local experimentation
+test/
