@@ -3,7 +3,7 @@
 
 _pkgname=opencloud-desktop
 pkgname=opencloud-desktop-bin
-# Updated by CI, do not edit manually
+# Version/rel is updated by CI, do not edit manually
 pkgver=3.0.3
 pkgrel=4
 pkgdesc='opencloud desktop application (binary package)'
@@ -27,6 +27,8 @@ makedepends=(doxygen
 conflicts=('opencloud-desktop')
 provides=('opencloud-desktop')
 source=("${_pkgname}::git+https://github.com/opencloud-eu/desktop.git#tag=v${pkgver}")
+# Updated by CI if pkgver changes
+# Run 'updpkgsums' to update this value if changing the 'source' array
 sha256sums=('88cd6ea12aa9f84ccb31d66b573ae81837db3964d8f826ae2400a4ddabf776fb')
 
 build() {

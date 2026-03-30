@@ -91,6 +91,8 @@ jobs:
           PACKAGE_NAME: ${{ matrix.name }}
           LATEST_VERSION: ${{ matrix.latest_version }}
           DESIRED_PKGREL: ${{ matrix.desired_pkgrel }}
+          CURRENT_VERSION: ${{ matrix.current_version }}
+          CURRENT_PKGREL: ${{ matrix.current_pkgrel }}
         run: |
           .github/scripts/update_pkgbuild.py
 
