@@ -1,4 +1,4 @@
-# opencloud-desktop-bin
+# Personal Arch Repository
 
 Fine, I'll do it myself
 
