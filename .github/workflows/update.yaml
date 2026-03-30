@@ -60,6 +60,20 @@ jobs:
         run: |
           pacman -Sy --noconfirm --needed pacman-contrib git tar zstd gnupg curl python
 
+      # Replace the pacman executable with a wrapper that forces "yes" to most prompts
+      # Fun fact: --ask is undocumented, see more:
+      # https://unix.stackexchange.com/questions/274727/how-to-force-pacman-to-answer-yes-to-all-questions/584001#584001
+      - name: Make pacman unattended
+        shell: python
+        run: |
+          import shutil
+          pacman_exec = shutil.which("pacman")
+          shutil.move(pacman_exec, f"{pacman_exec}.orig")
+          with open(pacman_exec, "w") as f:
+              f.write("#!/usr/bin/env bash\n")
+              f.write(f'exec "{pacman_exec}.orig" --ask 6 --noconfirm "$@"\n')
+          shutil.chmod(pacman_exec, 0o755)
+
       - name: Set packager
         run: |
           echo 'PACKAGER="hypergonial <git@hypergonial.com>"' >> /etc/makepkg.conf
@@ -115,7 +129,7 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL: ${{ steps.jobs.outputs.count }}
         run: |
           chown -R builder:builder .
-          sudo --preserve-env -u builder bash -lc 'yes | makepkg --syncdeps --noconfirm --needed --cleanbuild'
+          sudo --preserve-env -u builder makepkg --syncdeps --needed --cleanbuild
           echo filename="$(ls -1 *.pkg.tar.zst | grep -v -- '-debug-' | head -n1)" >> $GITHUB_OUTPUT
           chown -R root:root .
 
