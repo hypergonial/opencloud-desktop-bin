@@ -1,6 +1,6 @@
 pkgname=mullvad-tailscale-split-tunnel
 # Version/rel is updated by CI, do not edit manually
-pkgver=1.0.0
+pkgver=1.0.1
 pkgrel=1
 pkgdesc='Split tunneling config for Mullvad VPN and Tailscale'
 arch=('x86_64')
@@ -17,7 +17,7 @@ source=("mullvad-ts.rules"
         "ts-service-ext.conf")
 sha256sums=('b04551ff7ca9e07e00eaaf7247d0b8e3ada24ccee1393be9ea883bdece9473ba'
             '3b85c5ae584baea6b4c77e9c405df779863d61c9e7caded2961a2afd20459580'
-            'e1baa210081d12f826e1946999c0aa0bbc19f42f8dc1e7c5a1e6f5e367564108')
+            'c17a6d3f51d5f254e1dd30aaaa2f98d25fe3c5bd1efaf8e4c486f850260de6cb')
 
 package() {
 	# Copy nft.rules to the package directory
