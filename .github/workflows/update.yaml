@@ -66,13 +66,13 @@ jobs:
       - name: Make pacman unattended
         shell: python
         run: |
-          import shutil
+          import os, shutil
           pacman_exec = shutil.which("pacman")
           shutil.move(pacman_exec, f"{pacman_exec}.orig")
           with open(pacman_exec, "w") as f:
               f.write("#!/usr/bin/env bash\n")
               f.write(f'exec "{pacman_exec}.orig" --ask 6 --noconfirm "$@"\n')
-          shutil.chmod(pacman_exec, 0o755)
+          os.chmod(pacman_exec, 0o755)
 
       - name: Set packager
         run: |
