@@ -58,7 +58,7 @@ jobs:
 
       - name: Install tools
         run: |
-          pacman -Sy --noconfirm --needed git tar zstd gnupg curl
+          pacman -Sy --noconfirm --needed git tar zstd gnupg curl python
 
       - name: Create builder user
         run: |
