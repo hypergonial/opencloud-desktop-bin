@@ -60,6 +60,10 @@ jobs:
         run: |
           pacman -Sy --noconfirm --needed pacman-contrib git tar zstd gnupg curl python
 
+      - name: Set packager
+        run: |
+          echo 'PACKAGER="hypergonial <git@hypergonial.com>"' >> /etc/makepkg.conf
+
       - name: Create builder user
         run: |
           useradd -m builder
@@ -100,6 +104,9 @@ jobs:
 
       # TODO: Signing the package would be nice
 
+      # This would be a better way to handle the "yes" prompt but "--ask" is not forwarded by makepkg to pacman:
+      # https://unix.stackexchange.com/questions/274727/how-to-force-pacman-to-answer-yes-to-all-questions/584001#584001
+
       - name: Make package
         id: package
         working-directory: repo/${{ matrix.name }}
@@ -108,7 +115,7 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL: ${{ steps.jobs.outputs.count }}
         run: |
           chown -R builder:builder .
-          sudo --preserve-env -u builder makepkg --syncdeps --noconfirm --needed --cleanbuild
+          sudo --preserve-env -u builder bash -lc 'yes | makepkg --syncdeps --noconfirm --needed --cleanbuild'
           echo filename="$(ls -1 *.pkg.tar.zst | grep -v -- '-debug-' | head -n1)" >> $GITHUB_OUTPUT
           chown -R root:root .
 
