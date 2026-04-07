@@ -1,6 +1,6 @@
 pkgname=mullvad-tailscale-split-tunnel
 # Version/rel is updated by CI, do not edit manually
-pkgver=1.0.1
+pkgver=1.0.2
 pkgrel=1
 pkgdesc='Split tunneling config for Mullvad VPN and Tailscale'
 arch=('x86_64')
