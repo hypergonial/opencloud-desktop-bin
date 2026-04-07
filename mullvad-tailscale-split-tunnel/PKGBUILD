@@ -8,7 +8,7 @@ url="https://github.com/hypergonial/arch_repo/tree/main/mullvad-tailscale-split-
 license=('MIT')
 depends=(systemd
          nftables
-         iptables-nft
+         iptables
          mullvad-vpn
          tailscale)
 makedepends=(git)
